@@ -44,8 +44,12 @@ export interface UseSession {
   confirmSurname(rawName: string): Promise<void>;
   updateIntervals(intervals: [number, number, number, number]): void;
   startPlayback(idx: IntervalIndex): Promise<void>;
-  startTimer(): Promise<void>;
-  stopTimer(): Promise<void>;
+  // `eventTimestamp` should be the DOM event's `event.timeStamp` (on the
+  // same clock as performance.now()). Passing it keeps the Stopwatch
+  // anchored to when the browser created the event rather than when the
+  // JS handler ran — shaving variable dispatch latency off each sample.
+  startTimer(eventTimestamp?: number): Promise<void>;
+  stopTimer(eventTimestamp?: number): Promise<void>;
   reMeasure(trialId: string): Promise<void>;
   cancelReMeasure(): void;
   newSession(): void;
@@ -236,23 +240,27 @@ export function useSession(audio: AudioEngineLike): UseSession {
     setBriefStatus(null);
   }, [clearBriefStatusTimer]);
 
-  const startTimer = useCallback(async () => {
+  const startTimer = useCallback(async (eventTimestamp?: number) => {
     const current = sessionRef.current;
     if (current.phase !== 'armed') return;
-    // Match testtime.py:241 — capture t0 BEFORE the click beep.
-    stopwatchRef.current.start();
+    // Match testtime.py:241 — capture t0 BEFORE the click beep. Prefer the
+    // DOM event timestamp when available so t0 reflects when the browser
+    // created the click, not when the handler ran.
+    stopwatchRef.current.start(eventTimestamp);
     setSession((prev) =>
       prev.phase === 'armed' ? { ...prev, phase: 'timing' } : prev,
     );
     await audio.playClick();
   }, [audio]);
 
-  const stopTimer = useCallback(async () => {
+  const stopTimer = useCallback(async (eventTimestamp?: number) => {
     const current = sessionRef.current;
     if (current.phase !== 'timing' || current.currentInterval === null) return;
 
-    // Capture elapsed BEFORE any state work, mirroring testtime.py:248.
-    const elapsed = stopwatchRef.current.stopSeconds();
+    // Capture elapsed BEFORE any state work, mirroring testtime.py:248. As
+    // with startTimer, the event timestamp (if supplied) is what anchors
+    // the sample, not a fresh performance.now() reading.
+    const elapsed = stopwatchRef.current.stopSeconds(eventTimestamp);
 
     const intervalIndex = current.currentInterval;
     const target = current.intervals[intervalIndex];

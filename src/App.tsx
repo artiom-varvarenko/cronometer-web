@@ -171,11 +171,11 @@ export default function App() {
         <div className={styles.section}>
           <StartStopButton
             phase={phase}
-            onStart={() => {
-              void sess.startTimer();
+            onStart={(ts) => {
+              void sess.startTimer(ts);
             }}
-            onStop={() => {
-              void sess.stopTimer();
+            onStop={(ts) => {
+              void sess.stopTimer(ts);
             }}
           />
         </div>
