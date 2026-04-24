@@ -1,0 +1,23 @@
+.button {
+  display: block;
+  width: 100%;
+  min-height: 8rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 600;
+  text-decoration: underline;
+  background: var(--panel-bg);
+  border: 2px solid var(--panel-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.button:disabled {
+  background: #ececec;
+  text-decoration: none;
+}
+
+.timing {
+  background: #fff5f5;
+  border-color: #b00;
+  color: #b00;
+}

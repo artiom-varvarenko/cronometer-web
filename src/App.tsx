@@ -1,125 +1,107 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAudio } from './audio/useAudio';
-import type { PlayIntervalTelemetry } from './audio/AudioEngine';
-
-// Phase 2 dev harness. Replaced in Phase 3 by the real Russian UI.
-// Add ?debug=1 to the URL for console telemetry on every playInterval.
-
-interface LogEntry {
-  at: string;
-  label: string;
-  info?: PlayIntervalTelemetry;
-  error?: string;
-}
-
-const INTERVALS = [2, 3, 4, 5] as const;
+import { IntervalButtons } from './components/IntervalButtons';
+import { NameEntry } from './components/NameEntry';
+import { SettingsDialog } from './components/SettingsDialog';
+import { StartStopButton } from './components/StartStopButton';
+import { StatusLine } from './components/StatusLine';
+import { ru } from './i18n/ru';
+import { useSession } from './state/useSession';
+import styles from './App.module.css';
 
 export default function App() {
   const audio = useAudio();
-  const [busy, setBusy] = useState(false);
-  const [log, setLog] = useState<LogEntry[]>([]);
+  const sess = useSession(audio);
+  const [nameInput, setNameInput] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const pushLog = (entry: LogEntry) => {
-    setLog((prev) => [entry, ...prev].slice(0, 20));
-  };
+  // Reset the local name draft when the session is reset.
+  useEffect(() => {
+    if (sess.session.phase === 'setup') setNameInput('');
+  }, [sess.session.phase]);
 
-  const playInterval = async (seconds: number) => {
-    setBusy(true);
-    try {
-      const info = await audio.playInterval(seconds);
-      pushLog({
-        at: new Date().toLocaleTimeString(),
-        label: `playInterval(${seconds})`,
-        info,
-      });
-    } catch (err) {
-      pushLog({
-        at: new Date().toLocaleTimeString(),
-        label: `playInterval(${seconds})`,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const playClick = async () => {
-    setBusy(true);
-    try {
-      await audio.playClick();
-      pushLog({ at: new Date().toLocaleTimeString(), label: 'playClick()' });
-    } finally {
-      setBusy(false);
-    }
-  };
+  const phase = sess.session.phase;
+  const intervalsLocked =
+    phase === 'playing' || phase === 'armed' || phase === 'timing';
 
   return (
-    <main className="app-shell">
-      <h1>Phase 2 audio harness</h1>
-      <p className="hint">
-        Tap one of the interval buttons to hear two 1 kHz / 100 ms beeps
-        separated by that many seconds. The telemetry panel shows the
-        main-thread-observed gap and drift.
-      </p>
+    <main className={styles.shell}>
+      <header>
+        <h1 className={styles.title}>{ru.appTitle}</h1>
+        {sess.session.surname.length > 0 && phase !== 'setup' && (
+          <p className={styles.surnameLine}>{sess.session.surname}</p>
+        )}
+      </header>
 
-      <div className="button-row">
-        {INTERVALS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => playInterval(s)}
-            disabled={busy}
-          >
-            {s}s interval
-          </button>
-        ))}
-        <button type="button" onClick={playClick} disabled={busy}>
-          Click beep
-        </button>
-      </div>
+      <NameEntry
+        value={nameInput}
+        onChange={setNameInput}
+        surname={sess.session.surname}
+        locked={phase !== 'setup'}
+        onConfirm={() => sess.confirmSurname(nameInput)}
+      />
 
-      <h2>Telemetry</h2>
-      {log.length === 0 ? (
-        <p className="hint">No runs yet.</p>
-      ) : (
-        <table className="telemetry">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Call</th>
-              <th>Scheduled (s)</th>
-              <th>Measured (s)</th>
-              <th>Drift (ms)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {log.map((e, i) => (
-              <tr key={i}>
-                <td>{e.at}</td>
-                <td>{e.label}</td>
-                <td>{e.info ? e.info.scheduledGap.toFixed(3) : '—'}</td>
-                <td>{e.info ? e.info.measuredGap.toFixed(4) : '—'}</td>
-                <td
-                  className={
-                    e.info && Math.abs(e.info.driftMs) > 25 ? 'drift-high' : ''
-                  }
-                >
-                  {e.info
-                    ? e.info.driftMs.toFixed(2)
-                    : e.error
-                      ? `error: ${e.error}`
-                      : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <StatusLine
+        phase={phase}
+        currentInterval={sess.session.currentInterval}
+        intervalCounts={sess.intervalCounts}
+        briefStatus={sess.briefStatus}
+      />
+
+      <section className={styles.controls}>
+        <div className={styles.section}>
+          <IntervalButtons
+            intervals={sess.session.intervals}
+            intervalCounts={sess.intervalCounts}
+            disabled={phase !== 'confirmed'}
+            onPick={(idx) => {
+              void sess.startPlayback(idx);
+            }}
+          />
+        </div>
+        <div className={styles.section}>
+          <StartStopButton
+            phase={phase}
+            onStart={() => {
+              void sess.startTimer();
+            }}
+            onStop={() => {
+              void sess.stopTimer();
+            }}
+          />
+        </div>
+      </section>
+
+      {phase === 'complete' && (
+        <div className={styles.completeBanner} role="status">
+          {ru.completionMessage}
+        </div>
       )}
 
-      <p className="hint">
-        Append <code>?debug=1</code> to the URL to log each result to the
-        browser console.
-      </p>
+      <div className={styles.bottom}>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          disabled={intervalsLocked}
+        >
+          {ru.showIntervalsButton}
+        </button>
+        {phase === 'complete' && (
+          <button type="button" onClick={sess.newSession}>
+            {ru.newSessionButton}
+          </button>
+        )}
+      </div>
+
+      <SettingsDialog
+        open={settingsOpen}
+        intervals={sess.session.intervals}
+        onSave={(next) => {
+          sess.updateIntervals(next);
+          setSettingsOpen(false);
+        }}
+        onCancel={() => setSettingsOpen(false)}
+      />
     </main>
   );
 }

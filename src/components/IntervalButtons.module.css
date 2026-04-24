@@ -1,0 +1,32 @@
+.list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.button {
+  width: 100%;
+  padding: var(--space-3);
+  font: inherit;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  text-align: left;
+}
+
+.button:disabled {
+  background: #ececec;
+}
+
+.exhausted {
+  text-decoration: line-through;
+}
+
+@media (min-width: 600px) {
+  .list {
+    grid-template-columns: 1fr 1fr;
+  }
+}

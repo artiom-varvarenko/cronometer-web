@@ -1,0 +1,12 @@
+.line {
+  margin: var(--space-3) 0;
+  font-style: italic;
+  font-size: 1.05rem;
+  min-height: 1.5em;
+}
+
+.complete {
+  font-weight: 600;
+  font-style: normal;
+  color: #1f6feb;
+}
