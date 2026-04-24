@@ -10,6 +10,7 @@ import { StartStopButton } from './components/StartStopButton';
 import { StatsPanel } from './components/StatsPanel';
 import { StatusLine } from './components/StatusLine';
 import { ru } from './i18n/ru';
+import { useWakeLock } from './platform/useWakeLock';
 import {
   meanTau as computeMeanTau,
   sigmaTau,
@@ -27,6 +28,7 @@ export default function App() {
   const [nameInput, setNameInput] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [visibilityAborted, setVisibilityAborted] = useState(false);
 
   // Reset the local name draft when the session is reset.
   useEffect(() => {
@@ -36,6 +38,37 @@ export default function App() {
   const phase = sess.session.phase;
   const intervalsLocked =
     phase === 'playing' || phase === 'armed' || phase === 'timing';
+
+  // Wake lock is live from surname confirm until the session completes or
+  // the component unmounts. Feature-detected inside the hook.
+  useWakeLock(phase !== 'setup' && phase !== 'complete');
+
+  // Abort any in-flight trial when the tab is backgrounded. Playback scheduled
+  // on the audio thread keeps running in the background on most browsers, so
+  // the measured interval would no longer reflect what the subject heard.
+  const { abortTrialIfRunning } = sess;
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        if (abortTrialIfRunning()) {
+          setVisibilityAborted(true);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [abortTrialIfRunning]);
+
+  // Dismiss the abort banner as soon as the operator starts any new
+  // interaction — they have acknowledged it by retrying.
+  useEffect(() => {
+    if (phase === 'playing' || phase === 'timing' || phase === 'armed') {
+      setVisibilityAborted(false);
+    }
+  }, [phase]);
+
   const reMeasureActive = sess.session.pendingReMeasureOf !== null;
   const trialCount = sess.session.trials.length;
   const canExport = trialCount > 0 && !intervalsLocked && !exporting;
@@ -109,6 +142,20 @@ export default function App() {
         phase={phase}
         onCancel={sess.cancelReMeasure}
       />
+
+      {visibilityAborted && (
+        <div className={styles.abortBanner} role="alert">
+          <span className={styles.abortText}>{ru.visibilityAbortError}</span>
+          <button
+            type="button"
+            className={styles.abortDismiss}
+            onClick={() => setVisibilityAborted(false)}
+            aria-label={ru.dismiss}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <section className={styles.controls}>
         <div className={styles.section}>

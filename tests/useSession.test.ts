@@ -575,3 +575,135 @@ describe('useSession re-measure', () => {
     expect(replaced.userSeconds).toBeCloseTo(5.5, 5);
   });
 });
+
+describe('useSession abortTrialIfRunning', () => {
+  it('returns false and leaves state alone when no trial is in flight', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+
+    let aborted = true;
+    act(() => {
+      aborted = hook.result.current.abortTrialIfRunning();
+    });
+    expect(aborted).toBe(false);
+    expect(hook.result.current.session.phase).toBe('setup');
+
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    act(() => {
+      aborted = hook.result.current.abortTrialIfRunning();
+    });
+    expect(aborted).toBe(false);
+    expect(hook.result.current.session.phase).toBe('confirmed');
+  });
+
+  it('aborts during playing and falls back to confirmed without a trial', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await act(async () => {
+      void hook.result.current.startPlayback(1);
+    });
+    expect(hook.result.current.session.phase).toBe('playing');
+
+    let aborted = false;
+    act(() => {
+      aborted = hook.result.current.abortTrialIfRunning();
+    });
+    expect(aborted).toBe(true);
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.currentInterval).toBeNull();
+    expect(hook.result.current.session.trials).toHaveLength(0);
+
+    // The stranded playInterval must not resurrect the `armed` phase.
+    await act(async () => {
+      fake.pending[0]!.resolve();
+    });
+    await flushMicrotasks();
+    expect(hook.result.current.session.phase).toBe('confirmed');
+  });
+
+  it('aborts during timing without recording a trial', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await act(async () => {
+      void hook.result.current.startPlayback(0);
+    });
+    await act(async () => {
+      fake.pending[0]!.resolve();
+    });
+    await flushMicrotasks();
+    await act(async () => {
+      void hook.result.current.startTimer();
+    });
+    await flushMicrotasks();
+    expect(hook.result.current.session.phase).toBe('timing');
+
+    let aborted = false;
+    act(() => {
+      aborted = hook.result.current.abortTrialIfRunning();
+    });
+    expect(aborted).toBe(true);
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.trials).toHaveLength(0);
+  });
+
+  it('abort during a re-measure clears pendingReMeasureOf and keeps the original trial intact', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    setStopwatchElapsed(1.9);
+    await recordTrial(hook, fake, 1);
+    const original = hook.result.current.session.trials[0]!;
+
+    await act(async () => {
+      void hook.result.current.reMeasure(original.id);
+    });
+    expect(hook.result.current.session.pendingReMeasureOf).toBe(original.id);
+
+    let aborted = false;
+    act(() => {
+      aborted = hook.result.current.abortTrialIfRunning();
+    });
+    expect(aborted).toBe(true);
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+    const after = hook.result.current.session.trials[0]!;
+    expect(after.id).toBe(original.id);
+    expect(after.userSeconds).toBeCloseTo(1.9, 5);
+  });
+
+  it('abort after 20 trials returns to the complete phase', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    for (let idx = 0; idx < 4; idx++) {
+      for (let i = 0; i < TRIALS_PER_INTERVAL; i++) {
+        await recordTrial(hook, fake, idx as IntervalIndex);
+      }
+    }
+    expect(hook.result.current.session.phase).toBe('complete');
+    const trialId = hook.result.current.session.trials[0]!.id;
+
+    await act(async () => {
+      void hook.result.current.reMeasure(trialId);
+    });
+    expect(hook.result.current.session.phase).toBe('playing');
+
+    act(() => {
+      hook.result.current.abortTrialIfRunning();
+    });
+    expect(hook.result.current.session.phase).toBe('complete');
+    expect(hook.result.current.session.trials).toHaveLength(TOTAL_TRIALS);
+  });
+});

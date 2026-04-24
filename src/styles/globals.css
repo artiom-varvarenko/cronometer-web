@@ -43,3 +43,32 @@ button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* Phase 6: touch targets must be at least 48×48 CSS-px on coarse pointers.
+ * Components that need smaller dimensions (e.g. icon-only dismiss buttons)
+ * opt out via their own `@media (pointer: coarse)` rule. */
+@media (pointer: coarse) {
+  button,
+  input[type='text'],
+  input[type='number'],
+  input[type='email'],
+  input[type='search'],
+  input:not([type]),
+  select,
+  textarea {
+    min-height: 48px;
+  }
+
+  /* iOS Safari zooms the viewport when a focused input's font-size is
+   * below 16 px. Our body font shrinks to 14 px on narrow viewports, so
+   * pin inputs to 16 px on coarse pointers to avoid the zoom. */
+  input[type='text'],
+  input[type='number'],
+  input[type='email'],
+  input[type='search'],
+  input:not([type]),
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}

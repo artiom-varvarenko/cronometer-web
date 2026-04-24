@@ -104,12 +104,13 @@
 @media (pointer: coarse) {
   .redo {
     opacity: 1;
-    width: 2.25rem;
-    height: 2.25rem;
+    /* Phase 6: minimum 48×48 tap target for touch devices. */
+    width: 48px;
+    height: 48px;
   }
 
   .cell {
-    padding-right: calc(var(--space-2) + 2rem) !important;
+    padding-right: calc(var(--space-2) + 3rem) !important;
   }
 
   .table th,

@@ -97,6 +97,7 @@ export const ru = {
   audioUnlockError: 'Не удалось инициализировать звук. Попробуйте ещё раз.',
   visibilityAbortError:
     'Измерение прервано: вкладка была свёрнута. Повторите попытку.',
+  dismiss: 'Закрыть',
   gridEmptyCell: '—',
   statsMeanTauLabel: 'Среднее τ',
   statsSigmaLabel: 'σ',

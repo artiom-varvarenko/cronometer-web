@@ -8,6 +8,13 @@
   gap: var(--space-3);
 }
 
+/* Phone: reclaim horizontal space for the 4-column results table. */
+@media (max-width: 599px) {
+  .shell {
+    padding: var(--space-3) var(--space-2);
+  }
+}
+
 .title {
   margin: 0;
   font-size: clamp(1.4rem, 4vw, 2rem);
@@ -53,9 +60,59 @@
   background: var(--panel-bg);
 }
 
+/* Phone: stack the action buttons full-width so the long "Отобразить
+ * таблицу результатов" label doesn't overflow or wrap awkwardly. */
+@media (max-width: 599px) {
+  .bottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .completeBanner {
   padding: var(--space-3);
   background: #eef5ff;
   border: 1px solid #c2dafe;
   border-radius: 6px;
+}
+
+.abortBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0;
+  background: #fdecea;
+  border: 1px solid #f5b7b1;
+  border-radius: 6px;
+  color: #8a1f1f;
+}
+
+.abortText {
+  flex: 1 1 auto;
+  font-weight: 500;
+}
+
+.abortDismiss {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.abortDismiss:hover {
+  background: #f7c5bf;
+}
+
+@media (pointer: coarse) {
+  .abortDismiss {
+    width: 48px;
+    height: 48px;
+  }
 }

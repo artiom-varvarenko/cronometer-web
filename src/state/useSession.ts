@@ -49,6 +49,10 @@ export interface UseSession {
   reMeasure(trialId: string): Promise<void>;
   cancelReMeasure(): void;
   newSession(): void;
+  // Phase 6: tab hidden while playing/timing. Returns true if a trial was
+  // actually in flight and has been rolled back, so the caller can decide
+  // whether to show the operator an error banner.
+  abortTrialIfRunning(): boolean;
 }
 
 export class EmptySurnameError extends Error {
@@ -340,6 +344,28 @@ export function useSession(audio: AudioEngineLike): UseSession {
     setSession(makeInitialSession());
   }, [clearBriefStatusTimer]);
 
+  const abortTrialIfRunning = useCallback((): boolean => {
+    const current = sessionRef.current;
+    if (current.phase !== 'playing' && current.phase !== 'timing') {
+      return false;
+    }
+    // Any in-flight playInterval promise that resolves after this point is
+    // guarded by `prev.phase === 'playing'` in startPlayback / reMeasure, so
+    // it cannot re-arm a trial we just aborted.
+    clearBriefStatusTimer();
+    setBriefStatus(null);
+    setSession((prev) => {
+      if (prev.phase !== 'playing' && prev.phase !== 'timing') return prev;
+      return {
+        ...prev,
+        phase: idlePhaseForTrialCount(prev.trials.length),
+        currentInterval: null,
+        pendingReMeasureOf: null,
+      };
+    });
+    return true;
+  }, [clearBriefStatusTimer]);
+
   const intervalCounts = countByInterval(session.trials);
 
   return {
@@ -354,5 +380,6 @@ export function useSession(audio: AudioEngineLike): UseSession {
     reMeasure,
     cancelReMeasure,
     newSession,
+    abortTrialIfRunning,
   };
 }

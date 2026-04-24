@@ -54,6 +54,15 @@ export class AudioEngine {
       source.start(0);
       this.unlocked = true;
     }
+    if (DEBUG && this.ctx.state !== 'running') {
+      // iOS Safari sometimes leaves the context in 'interrupted' or
+      // 'suspended' even after resume() resolves. Surface it loudly during
+      // manual QA so the operator knows the unlock gesture did not take.
+      console.warn(
+        '[AudioEngine.ensureUnlocked] ctx.state not running after unlock:',
+        this.ctx.state,
+      );
+    }
   }
 
   // Schedules two 1 kHz / 100 ms beeps exactly intervalSeconds apart.
