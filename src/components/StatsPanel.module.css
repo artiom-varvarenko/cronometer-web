@@ -1,0 +1,36 @@
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0;
+}
+
+.value {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.empty {
+  margin: var(--space-3) 0;
+  color: #777;
+  font-style: italic;
+}

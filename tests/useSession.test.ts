@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IntervalIndex } from '../src/state/types';
 import {
   EmptySurnameError,
@@ -9,9 +9,20 @@ import {
   type AudioEngineLike,
 } from '../src/state/useSession';
 
-// Mock Stopwatch so trial timing is deterministic and independent of
-// performance.now (which jsdom + React + fake timers all touch).
+// Stopwatch mock has a mutable backing value (hoisted so vi.mock's factory
+// can still reach it) — tests can change the next stopSeconds() reading to
+// verify that re-measure overwrites userSeconds with the fresh sample.
 const STOPWATCH_ELAPSED_S = 1.5;
+const { setStopwatchElapsed, getStopwatchElapsed } = vi.hoisted(() => {
+  let value = 1.5;
+  return {
+    setStopwatchElapsed: (v: number) => {
+      value = v;
+    },
+    getStopwatchElapsed: () => value,
+  };
+});
+
 vi.mock('../src/timing/measurement', () => ({
   Stopwatch: class {
     private started = false;
@@ -21,7 +32,7 @@ vi.mock('../src/timing/measurement', () => ({
     stopSeconds(): number {
       if (!this.started) throw new Error('Stopwatch not started');
       this.started = false;
-      return STOPWATCH_ELAPSED_S;
+      return getStopwatchElapsed();
     }
   },
 }));
@@ -103,6 +114,34 @@ async function recordTrial(
   });
   await flushMicrotasks();
 }
+
+async function reMeasureTrial(
+  hook: ReturnType<typeof renderHook<ReturnType<typeof useSession>, void>>,
+  fake: FakeAudio,
+  trialId: string,
+) {
+  await act(async () => {
+    void hook.result.current.reMeasure(trialId);
+  });
+  const d = fake.pending.shift();
+  if (!d) throw new Error('expected a pending playInterval for re-measure');
+  await act(async () => {
+    d.resolve();
+  });
+  await flushMicrotasks();
+  await act(async () => {
+    void hook.result.current.startTimer();
+  });
+  await flushMicrotasks();
+  await act(async () => {
+    void hook.result.current.stopTimer();
+  });
+  await flushMicrotasks();
+}
+
+beforeEach(() => {
+  setStopwatchElapsed(STOPWATCH_ELAPSED_S);
+});
 
 afterEach(() => {
   vi.useRealTimers();
@@ -302,5 +341,237 @@ describe('useSession', () => {
       vi.advanceTimersByTime(1000);
     });
     expect(hook.result.current.briefStatus).toBeNull();
+  });
+});
+
+describe('useSession re-measure', () => {
+  it('replaces userSeconds in place while preserving id, attempt, and createdAt', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    setStopwatchElapsed(1.9);
+    await recordTrial(hook, fake, 1);
+    const original = hook.result.current.session.trials[0]!;
+    const originalId = original.id;
+    const originalCreatedAt = original.createdAt;
+
+    setStopwatchElapsed(2.4);
+    await reMeasureTrial(hook, fake, originalId);
+
+    const replaced = hook.result.current.session.trials[0]!;
+    expect(hook.result.current.session.trials).toHaveLength(1);
+    expect(replaced.id).toBe(originalId);
+    expect(replaced.attempt).toBe(1);
+    expect(replaced.intervalIndex).toBe(1);
+    expect(replaced.createdAt).toBe(originalCreatedAt);
+    expect(replaced.userSeconds).toBeCloseTo(2.4, 5);
+    expect(replaced.targetSeconds).toBe(3);
+    expect(replaced.measuredAt).toBeGreaterThanOrEqual(originalCreatedAt);
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+    expect(hook.result.current.session.currentInterval).toBeNull();
+  });
+
+  it('re-measuring after 20 trials returns to the complete phase', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    for (let idx = 0; idx < 4; idx++) {
+      for (let i = 0; i < TRIALS_PER_INTERVAL; i++) {
+        await recordTrial(hook, fake, idx as IntervalIndex);
+      }
+    }
+    expect(hook.result.current.session.phase).toBe('complete');
+    const target = hook.result.current.session.trials[3]!;
+    const targetId = target.id;
+
+    setStopwatchElapsed(3.14);
+    await reMeasureTrial(hook, fake, targetId);
+
+    expect(hook.result.current.session.trials).toHaveLength(TOTAL_TRIALS);
+    expect(hook.result.current.session.phase).toBe('complete');
+    const replaced = hook.result.current.session.trials.find(
+      (t) => t.id === targetId,
+    )!;
+    expect(replaced.userSeconds).toBeCloseTo(3.14, 5);
+    expect(replaced.attempt).toBe(target.attempt);
+  });
+
+  it('re-measure transitions confirmed → playing → armed with pendingReMeasureOf set', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await recordTrial(hook, fake, 0);
+    const trialId = hook.result.current.session.trials[0]!.id;
+
+    await act(async () => {
+      void hook.result.current.reMeasure(trialId);
+    });
+    expect(hook.result.current.session.phase).toBe('playing');
+    expect(hook.result.current.session.currentInterval).toBe(0);
+    expect(hook.result.current.session.pendingReMeasureOf).toBe(trialId);
+    expect(fake.audio.playInterval).toHaveBeenLastCalledWith(2);
+
+    await act(async () => {
+      fake.pending[0]!.resolve();
+    });
+    await flushMicrotasks();
+    expect(hook.result.current.session.phase).toBe('armed');
+    expect(hook.result.current.session.pendingReMeasureOf).toBe(trialId);
+  });
+
+  it('cancelReMeasure during playing resets phase and clears pending', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await recordTrial(hook, fake, 2);
+    const trialId = hook.result.current.session.trials[0]!.id;
+
+    await act(async () => {
+      void hook.result.current.reMeasure(trialId);
+    });
+    expect(hook.result.current.session.phase).toBe('playing');
+
+    act(() => {
+      hook.result.current.cancelReMeasure();
+    });
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+    expect(hook.result.current.session.currentInterval).toBeNull();
+    expect(hook.result.current.session.trials).toHaveLength(1);
+
+    // Resolving the stranded playback must not bump us back to armed.
+    await act(async () => {
+      fake.pending[0]!.resolve();
+    });
+    await flushMicrotasks();
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+  });
+
+  it('cancelReMeasure during armed restores the idle phase without touching trials', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await recordTrial(hook, fake, 0);
+    await recordTrial(hook, fake, 0);
+    const originalTrials = hook.result.current.session.trials.map((t) => ({
+      ...t,
+    }));
+    const trialId = originalTrials[0]!.id;
+
+    await act(async () => {
+      void hook.result.current.reMeasure(trialId);
+    });
+    await act(async () => {
+      fake.pending[0]!.resolve();
+    });
+    await flushMicrotasks();
+    expect(hook.result.current.session.phase).toBe('armed');
+
+    act(() => {
+      hook.result.current.cancelReMeasure();
+    });
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+    expect(hook.result.current.session.trials).toEqual(originalTrials);
+  });
+
+  it('cancelReMeasure from complete returns to complete', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    for (let idx = 0; idx < 4; idx++) {
+      for (let i = 0; i < TRIALS_PER_INTERVAL; i++) {
+        await recordTrial(hook, fake, idx as IntervalIndex);
+      }
+    }
+    const trialId = hook.result.current.session.trials[0]!.id;
+    await act(async () => {
+      void hook.result.current.reMeasure(trialId);
+    });
+
+    act(() => {
+      hook.result.current.cancelReMeasure();
+    });
+    expect(hook.result.current.session.phase).toBe('complete');
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+  });
+
+  it('reMeasure is a no-op when phase is not idle', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await recordTrial(hook, fake, 0);
+    const trialId = hook.result.current.session.trials[0]!.id;
+
+    // Put the session into `playing` via a normal startPlayback, then try to
+    // launch a re-measure — it must be ignored.
+    await act(async () => {
+      void hook.result.current.startPlayback(1);
+    });
+    expect(hook.result.current.session.phase).toBe('playing');
+    const pendingBefore = fake.pending.length;
+
+    await act(async () => {
+      await hook.result.current.reMeasure(trialId);
+    });
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+    expect(fake.pending.length).toBe(pendingBefore);
+  });
+
+  it('reMeasure refuses an unknown trialId', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await recordTrial(hook, fake, 0);
+    const pendingBefore = fake.pending.length;
+
+    await act(async () => {
+      await hook.result.current.reMeasure('does-not-exist');
+    });
+    expect(hook.result.current.session.pendingReMeasureOf).toBeNull();
+    expect(hook.result.current.session.phase).toBe('confirmed');
+    expect(fake.pending.length).toBe(pendingBefore);
+  });
+
+  it('re-measure uses the current intervals[idx] and updates targetSeconds accordingly', async () => {
+    const fake = makeFakeAudio();
+    const hook = renderHook(() => useSession(fake.audio));
+    await act(async () => {
+      await hook.result.current.confirmSurname('Иванов');
+    });
+    await recordTrial(hook, fake, 0);
+    const trialId = hook.result.current.session.trials[0]!.id;
+    expect(hook.result.current.session.trials[0]!.targetSeconds).toBe(2);
+
+    // Operator bumps interval 0 to 6 s between recording and re-measuring.
+    act(() => {
+      hook.result.current.updateIntervals([6, 3, 4, 5]);
+    });
+
+    setStopwatchElapsed(5.5);
+    await reMeasureTrial(hook, fake, trialId);
+
+    const replaced = hook.result.current.session.trials[0]!;
+    expect(fake.audio.playInterval).toHaveBeenLastCalledWith(6);
+    expect(replaced.targetSeconds).toBe(6);
+    expect(replaced.userSeconds).toBeCloseTo(5.5, 5);
   });
 });

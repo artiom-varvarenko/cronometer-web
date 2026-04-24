@@ -46,6 +46,8 @@ export interface UseSession {
   startPlayback(idx: IntervalIndex): Promise<void>;
   startTimer(): Promise<void>;
   stopTimer(): Promise<void>;
+  reMeasure(trialId: string): Promise<void>;
+  cancelReMeasure(): void;
   newSession(): void;
 }
 
@@ -62,6 +64,12 @@ function countByInterval(
   const counts: [number, number, number, number] = [0, 0, 0, 0];
   for (const t of trials) counts[t.intervalIndex] += 1;
   return counts;
+}
+
+// After a re-measure completes or is cancelled, we return to whichever idle
+// phase reflects current trial count.
+function idlePhaseForTrialCount(trialCount: number): Phase {
+  return trialCount >= TOTAL_TRIALS ? 'complete' : 'confirmed';
 }
 
 export function useSession(audio: AudioEngineLike): UseSession {
@@ -154,6 +162,76 @@ export function useSession(audio: AudioEngineLike): UseSession {
     [audio, clearBriefStatusTimer],
   );
 
+  // Play the reference interval for an existing trial so the operator can
+  // produce a fresh userSeconds value. The trial is replaced in place by
+  // stopTimer — see the pendingReMeasureOf branch there.
+  const reMeasure = useCallback(
+    async (trialId: string) => {
+      const current = sessionRef.current;
+      if (current.phase !== 'confirmed' && current.phase !== 'complete') return;
+      if (current.pendingReMeasureOf !== null) return;
+      const trial = current.trials.find((t) => t.id === trialId);
+      if (!trial) return;
+
+      const idx = trial.intervalIndex;
+      const target = current.intervals[idx];
+
+      clearBriefStatusTimer();
+      setBriefStatus(null);
+
+      setSession((prev) => {
+        if (prev.phase !== 'confirmed' && prev.phase !== 'complete') {
+          return prev;
+        }
+        if (prev.pendingReMeasureOf !== null) return prev;
+        return {
+          ...prev,
+          phase: 'playing',
+          currentInterval: idx,
+          pendingReMeasureOf: trialId,
+        };
+      });
+
+      try {
+        await audio.playInterval(target);
+      } catch (err) {
+        // Cancel silently rolls pendingReMeasureOf back to null; our rollback
+        // must only apply if that cancel hasn't already happened.
+        setSession((prev) => {
+          if (prev.pendingReMeasureOf !== trialId) return prev;
+          return {
+            ...prev,
+            phase: idlePhaseForTrialCount(prev.trials.length),
+            currentInterval: null,
+            pendingReMeasureOf: null,
+          };
+        });
+        throw err;
+      }
+
+      setSession((prev) =>
+        prev.phase === 'playing' && prev.pendingReMeasureOf === trialId
+          ? { ...prev, phase: 'armed' }
+          : prev,
+      );
+    },
+    [audio, clearBriefStatusTimer],
+  );
+
+  const cancelReMeasure = useCallback(() => {
+    setSession((prev) => {
+      if (prev.pendingReMeasureOf === null) return prev;
+      return {
+        ...prev,
+        phase: idlePhaseForTrialCount(prev.trials.length),
+        currentInterval: null,
+        pendingReMeasureOf: null,
+      };
+    });
+    clearBriefStatusTimer();
+    setBriefStatus(null);
+  }, [clearBriefStatusTimer]);
+
   const startTimer = useCallback(async () => {
     const current = sessionRef.current;
     if (current.phase !== 'armed') return;
@@ -174,10 +252,44 @@ export function useSession(audio: AudioEngineLike): UseSession {
 
     const intervalIndex = current.currentInterval;
     const target = current.intervals[intervalIndex];
+    const now = Date.now();
+
+    // Re-measure replaces an existing trial in place; the original createdAt,
+    // id, intervalIndex, and attempt number are preserved so the grid cell
+    // stays stable and derived stats recompute automatically on trials[].
+    if (current.pendingReMeasureOf !== null) {
+      const trialId = current.pendingReMeasureOf;
+      setSession((prev) => {
+        if (prev.phase !== 'timing' || prev.pendingReMeasureOf !== trialId) {
+          return prev;
+        }
+        const nextTrials = prev.trials.map((t) =>
+          t.id === trialId
+            ? {
+                ...t,
+                userSeconds: elapsed,
+                targetSeconds: target,
+                measuredAt: now,
+              }
+            : t,
+        );
+        return {
+          ...prev,
+          trials: nextTrials,
+          phase: idlePhaseForTrialCount(nextTrials.length),
+          currentInterval: null,
+          pendingReMeasureOf: null,
+        };
+      });
+      clearBriefStatusTimer();
+      setBriefStatus(null);
+      await audio.playClick();
+      return;
+    }
+
     const existingForInterval = current.trials.filter(
       (t) => t.intervalIndex === intervalIndex,
     ).length;
-    const now = Date.now();
     const trial: Trial = {
       id: uuid(),
       intervalIndex,
@@ -239,6 +351,8 @@ export function useSession(audio: AudioEngineLike): UseSession {
     startPlayback,
     startTimer,
     stopTimer,
+    reMeasure,
+    cancelReMeasure,
     newSession,
   };
 }

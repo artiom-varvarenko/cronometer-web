@@ -1,0 +1,129 @@
+.wrapper {
+  position: relative;
+  margin: var(--space-3) 0;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--panel-bg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  border: 1px solid var(--panel-border);
+  padding: var(--space-2);
+  text-align: center;
+  min-width: 4.5rem;
+}
+
+.table thead th {
+  background: #f6f6f6;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.rowHeader {
+  background: #fafafa;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cell {
+  position: relative;
+  padding-right: calc(var(--space-2) + 1.5rem) !important;
+}
+
+.value {
+  display: inline-block;
+}
+
+.empty {
+  color: #999;
+}
+
+.summary {
+  font-weight: 600;
+  background: #fafafa;
+}
+
+.redo {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.cell:hover .redo,
+.cell:focus-within .redo {
+  opacity: 1;
+}
+
+.redo:hover {
+  background: #e6effd;
+  border-color: #c2dafe;
+}
+
+.redo:disabled {
+  cursor: not-allowed;
+  color: #aaa;
+}
+
+.pending {
+  background: #fff8e1;
+}
+
+.pending .redo {
+  opacity: 1;
+  color: #b77300;
+}
+
+@media (pointer: coarse) {
+  .redo {
+    opacity: 1;
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .cell {
+    padding-right: calc(var(--space-2) + 2rem) !important;
+  }
+
+  .table th,
+  .table td {
+    min-width: 5.5rem;
+  }
+}
+
+.reMeasureActive .redo:not(:disabled) {
+  /* While a re-measure is in flight the other redo buttons stay dimmed so
+     it is clear only the highlighted cell is being replaced. */
+  opacity: 0.3;
+}
+
+.reMeasureActive .pending .redo {
+  opacity: 1;
+}

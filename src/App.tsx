@@ -1,13 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAudio } from './audio/useAudio';
+import { CyclesTable } from './components/CyclesTable';
 import { IntervalButtons } from './components/IntervalButtons';
 import { NameEntry } from './components/NameEntry';
+import { ReMeasureControls } from './components/ReMeasureControls';
+import { ResultsGrid } from './components/ResultsGrid';
 import { SettingsDialog } from './components/SettingsDialog';
 import { StartStopButton } from './components/StartStopButton';
+import { StatsPanel } from './components/StatsPanel';
 import { StatusLine } from './components/StatusLine';
 import { ru } from './i18n/ru';
+import {
+  meanTau as computeMeanTau,
+  sigmaTau,
+  tauForInterval,
+} from './state/stats';
+import type { IntervalIndex } from './state/types';
 import { useSession } from './state/useSession';
 import styles from './App.module.css';
+
+const INDICES: readonly IntervalIndex[] = [0, 1, 2, 3];
 
 export default function App() {
   const audio = useAudio();
@@ -23,6 +35,24 @@ export default function App() {
   const phase = sess.session.phase;
   const intervalsLocked =
     phase === 'playing' || phase === 'armed' || phase === 'timing';
+  const reMeasureActive = sess.session.pendingReMeasureOf !== null;
+
+  // Derived stats — recomputed on every trials change, so re-measure is
+  // automatically reflected in mean τ, σ and the cycles table without any
+  // extra wiring (see the Phase 4 contract in the plan).
+  const { meanTauValue, sigmaValue } = useMemo(() => {
+    const perIntervalTaus = INDICES.map((idx) =>
+      tauForInterval(
+        sess.session.trials.filter((t) => t.intervalIndex === idx),
+      ),
+    );
+    const m = computeMeanTau(perIntervalTaus);
+    const nonNull = perIntervalTaus.filter((t): t is number => t !== null);
+    const s = m !== null ? sigmaTau(nonNull, m) : null;
+    return { meanTauValue: m, sigmaValue: s };
+  }, [sess.session.trials]);
+
+  const showResults = phase !== 'setup' && sess.session.trials.length > 0;
 
   return (
     <main className={styles.shell}>
@@ -48,12 +78,18 @@ export default function App() {
         briefStatus={sess.briefStatus}
       />
 
+      <ReMeasureControls
+        pendingReMeasureOf={sess.session.pendingReMeasureOf}
+        phase={phase}
+        onCancel={sess.cancelReMeasure}
+      />
+
       <section className={styles.controls}>
         <div className={styles.section}>
           <IntervalButtons
             intervals={sess.session.intervals}
             intervalCounts={sess.intervalCounts}
-            disabled={phase !== 'confirmed'}
+            disabled={phase !== 'confirmed' || reMeasureActive}
             onPick={(idx) => {
               void sess.startPlayback(idx);
             }}
@@ -72,10 +108,26 @@ export default function App() {
         </div>
       </section>
 
-      {phase === 'complete' && (
+      {phase === 'complete' && !reMeasureActive && (
         <div className={styles.completeBanner} role="status">
           {ru.completionMessage}
         </div>
+      )}
+
+      {showResults && (
+        <>
+          <ResultsGrid
+            intervals={sess.session.intervals}
+            trials={sess.session.trials}
+            phase={phase}
+            pendingReMeasureOf={sess.session.pendingReMeasureOf}
+            onReMeasure={(trialId) => {
+              void sess.reMeasure(trialId);
+            }}
+          />
+          <StatsPanel meanTau={meanTauValue} sigma={sigmaValue} />
+          <CyclesTable meanTau={meanTauValue} />
+        </>
       )}
 
       <div className={styles.bottom}>
@@ -86,7 +138,7 @@ export default function App() {
         >
           {ru.showIntervalsButton}
         </button>
-        {phase === 'complete' && (
+        {phase === 'complete' && !reMeasureActive && (
           <button type="button" onClick={sess.newSession}>
             {ru.newSessionButton}
           </button>

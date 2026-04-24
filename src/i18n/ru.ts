@@ -89,12 +89,21 @@ export const ru = {
   // ---- Web-only strings (not present in testtime.py) -----------------------
   newSessionButton: 'Новая сессия',
   reMeasureCancel: 'Отменить',
+  reMeasureBanner: 'Идёт повторное измерение',
+  reMeasureTooltip: 'Повторить измерение',
   partialExportConfirm: 'Экспортировать частичные результаты?',
   tooltipExportNoTrials: 'Экспорт доступен после первого измерения',
   tooltipIntervalExhausted: 'Этот интервал уже использован 5 раз',
   audioUnlockError: 'Не удалось инициализировать звук. Попробуйте ещё раз.',
   visibilityAbortError:
     'Измерение прервано: вкладка была свёрнута. Повторите попытку.',
+  gridEmptyCell: '—',
+  statsMeanTauLabel: 'Среднее τ',
+  statsSigmaLabel: 'σ',
+  cyclesColumnCycle: 'Цикл',
+  cyclesColumnValue: 'Значение',
+  cyclesColumnAge: 'Возраст',
+  noStatsYet: 'Статистика появится после первого измерения',
 
   // ---- Excel export (testtime.py:379, 388, 395, 412, 434, 449, 461, 470-471)
   excelSheetTitle: 'Результаты',
