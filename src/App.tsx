@@ -26,6 +26,7 @@ export default function App() {
   const sess = useSession(audio);
   const [nameInput, setNameInput] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Reset the local name draft when the session is reset.
   useEffect(() => {
@@ -36,6 +37,31 @@ export default function App() {
   const intervalsLocked =
     phase === 'playing' || phase === 'armed' || phase === 'timing';
   const reMeasureActive = sess.session.pendingReMeasureOf !== null;
+  const trialCount = sess.session.trials.length;
+  const canExport = trialCount > 0 && !intervalsLocked && !exporting;
+
+  const handleExport = async () => {
+    if (!canExport) return;
+    if (
+      trialCount < 20 &&
+      !window.confirm(ru.partialExportConfirm)
+    ) {
+      return;
+    }
+    setExporting(true);
+    try {
+      // Lazy import keeps ExcelJS (~50 kB gzipped) out of the initial chunk.
+      const { exportWorkbook } = await import('./excel/exportWorkbook');
+      await exportWorkbook(sess.session);
+    } catch (err) {
+      console.error('exportWorkbook failed', err);
+      window.alert(
+        `${ru.errorFileSavePrefix} ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Derived stats — recomputed on every trials change, so re-measure is
   // automatically reflected in mean τ, σ and the cycles table without any
@@ -131,6 +157,14 @@ export default function App() {
       )}
 
       <div className={styles.bottom}>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={!canExport}
+          title={trialCount === 0 ? ru.tooltipExportNoTrials : undefined}
+        >
+          {ru.showResultsButton}
+        </button>
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
