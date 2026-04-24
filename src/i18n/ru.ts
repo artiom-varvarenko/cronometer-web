@@ -98,6 +98,11 @@ export const ru = {
   visibilityAbortError:
     'Измерение прервано: вкладка была свёрнута. Повторите попытку.',
   dismiss: 'Закрыть',
+  errorBoundaryTitle: 'Произошла ошибка',
+  errorBoundaryMessage:
+    'Приложение столкнулось с непредвиденной ошибкой. Перезагрузите страницу, чтобы продолжить.',
+  errorBoundaryReload: 'Перезагрузить страницу',
+  errorBoundaryDetailsLabel: 'Подробности',
   gridEmptyCell: '—',
   statsMeanTauLabel: 'Среднее τ',
   statsSigmaLabel: 'σ',
