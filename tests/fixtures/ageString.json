@@ -1,0 +1,66 @@
+[
+  {
+    "years": 0.0,
+    "expected": "(0д)"
+  },
+  {
+    "years": 0.08,
+    "expected": "(29д)"
+  },
+  {
+    "years": 0.5,
+    "expected": "(6м)"
+  },
+  {
+    "years": 1.0,
+    "expected": "(1г)"
+  },
+  {
+    "years": 1.9999,
+    "expected": "(2г)"
+  },
+  {
+    "years": 3.0,
+    "expected": "(3г)"
+  },
+  {
+    "years": 12.0,
+    "expected": "(12г)"
+  },
+  {
+    "years": 0.25,
+    "expected": "(3м)"
+  },
+  {
+    "years": 1.0625,
+    "expected": "(1г, 23д)"
+  },
+  {
+    "years": 2.125,
+    "expected": "(2г, 1м, 15д)"
+  },
+  {
+    "years": 4.25,
+    "expected": "(4г, 3м)"
+  },
+  {
+    "years": 8.5,
+    "expected": "(8г, 6м)"
+  },
+  {
+    "years": 17.0,
+    "expected": "(17г)"
+  },
+  {
+    "years": 25.5,
+    "expected": "(25г, 6м)"
+  },
+  {
+    "years": 51.0,
+    "expected": "(51г)"
+  },
+  {
+    "years": 102.0,
+    "expected": "(102г)"
+  }
+]

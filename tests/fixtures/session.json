@@ -1,0 +1,342 @@
+{
+  "intervals": [
+    2.0,
+    3.0,
+    4.0,
+    5.0
+  ],
+  "trials": [
+    [
+      1.98,
+      2.03,
+      1.95,
+      2.02,
+      2.0
+    ],
+    [
+      2.97,
+      3.05,
+      2.96,
+      3.02,
+      3.0
+    ],
+    [
+      3.96,
+      4.04,
+      4.01,
+      3.98,
+      4.0
+    ],
+    [
+      4.95,
+      5.05,
+      4.98,
+      5.02,
+      5.0
+    ]
+  ],
+  "per_interval_suma": [
+    9.98,
+    15.0,
+    19.99,
+    25.0
+  ],
+  "per_interval_tau": [
+    0.998,
+    1.0,
+    0.9994999999999999,
+    1.0
+  ],
+  "mean_tau": 0.999375,
+  "sigma_tau": 0.000946484724300044,
+  "cycles": [
+    {
+      "cycle": "C0.25",
+      "multiplier": 0.25,
+      "value": 2.124,
+      "age": "(2г, 1м, 15д)"
+    },
+    {
+      "cycle": "C0.5",
+      "multiplier": 0.5,
+      "value": 4.247,
+      "age": "(4г, 2м, 29д)"
+    },
+    {
+      "cycle": "C0.75",
+      "multiplier": 0.75,
+      "value": 6.371,
+      "age": "(6г, 4м, 14д)"
+    },
+    {
+      "cycle": "C1",
+      "multiplier": 1.0,
+      "value": 8.495,
+      "age": "(8г, 5м, 28д)"
+    },
+    {
+      "cycle": "C1.25",
+      "multiplier": 1.25,
+      "value": 10.618,
+      "age": "(10г, 7м, 13д)"
+    },
+    {
+      "cycle": "C1.5",
+      "multiplier": 1.5,
+      "value": 12.742,
+      "age": "(12г, 8м, 28д)"
+    },
+    {
+      "cycle": "C1.75",
+      "multiplier": 1.75,
+      "value": 14.866,
+      "age": "(14г, 10м, 12д)"
+    },
+    {
+      "cycle": "C2",
+      "multiplier": 2.0,
+      "value": 16.989,
+      "age": "(16г, 11м, 27д)"
+    },
+    {
+      "cycle": "C2.25",
+      "multiplier": 2.25,
+      "value": 19.113,
+      "age": "(19г, 1м, 11д)"
+    },
+    {
+      "cycle": "C2.5",
+      "multiplier": 2.5,
+      "value": 21.237,
+      "age": "(21г, 2м, 26д)"
+    },
+    {
+      "cycle": "C2.75",
+      "multiplier": 2.75,
+      "value": 23.36,
+      "age": "(23г, 4м, 10д)"
+    },
+    {
+      "cycle": "C3",
+      "multiplier": 3.0,
+      "value": 25.484,
+      "age": "(25г, 5м, 25д)"
+    },
+    {
+      "cycle": "C3.25",
+      "multiplier": 3.25,
+      "value": 27.608,
+      "age": "(27г, 7м, 9д)"
+    },
+    {
+      "cycle": "C3.5",
+      "multiplier": 3.5,
+      "value": 29.731,
+      "age": "(29г, 8м, 24д)"
+    },
+    {
+      "cycle": "C3.75",
+      "multiplier": 3.75,
+      "value": 31.855,
+      "age": "(31г, 10м, 8д)"
+    },
+    {
+      "cycle": "C4",
+      "multiplier": 4.0,
+      "value": 33.979,
+      "age": "(33г, 11м, 23д)"
+    },
+    {
+      "cycle": "C4.25",
+      "multiplier": 4.25,
+      "value": 36.102,
+      "age": "(36г, 1м, 7д)"
+    },
+    {
+      "cycle": "C4.5",
+      "multiplier": 4.5,
+      "value": 38.226,
+      "age": "(38г, 2м, 22д)"
+    },
+    {
+      "cycle": "C4.75",
+      "multiplier": 4.75,
+      "value": 40.35,
+      "age": "(40г, 4м, 6д)"
+    },
+    {
+      "cycle": "C5",
+      "multiplier": 5.0,
+      "value": 42.473,
+      "age": "(42г, 5м, 21д)"
+    },
+    {
+      "cycle": "C5.25",
+      "multiplier": 5.25,
+      "value": 44.597,
+      "age": "(44г, 7м, 5д)"
+    },
+    {
+      "cycle": "C5.5",
+      "multiplier": 5.5,
+      "value": 46.721,
+      "age": "(46г, 8м, 20д)"
+    },
+    {
+      "cycle": "C5.75",
+      "multiplier": 5.75,
+      "value": 48.844,
+      "age": "(48г, 10м, 4д)"
+    },
+    {
+      "cycle": "C6",
+      "multiplier": 6.0,
+      "value": 50.968,
+      "age": "(50г, 11м, 19д)"
+    },
+    {
+      "cycle": "C6.25",
+      "multiplier": 6.25,
+      "value": 53.092,
+      "age": "(53г, 1м, 3д)"
+    },
+    {
+      "cycle": "C6.5",
+      "multiplier": 6.5,
+      "value": 55.215,
+      "age": "(55г, 2м, 18д)"
+    },
+    {
+      "cycle": "C6.75",
+      "multiplier": 6.75,
+      "value": 57.339,
+      "age": "(57г, 4м, 2д)"
+    },
+    {
+      "cycle": "C7",
+      "multiplier": 7.0,
+      "value": 59.463,
+      "age": "(59г, 5м, 17д)"
+    },
+    {
+      "cycle": "C7.25",
+      "multiplier": 7.25,
+      "value": 61.586,
+      "age": "(61г, 7м, 1д)"
+    },
+    {
+      "cycle": "C7.5",
+      "multiplier": 7.5,
+      "value": 63.71,
+      "age": "(63г, 8м, 16д)"
+    },
+    {
+      "cycle": "C7.75",
+      "multiplier": 7.75,
+      "value": 65.834,
+      "age": "(65г, 10м)"
+    },
+    {
+      "cycle": "C8",
+      "multiplier": 8.0,
+      "value": 67.957,
+      "age": "(67г, 11м, 15д)"
+    },
+    {
+      "cycle": "C8.25",
+      "multiplier": 8.25,
+      "value": 70.081,
+      "age": "(70г, 1м)"
+    },
+    {
+      "cycle": "C8.5",
+      "multiplier": 8.5,
+      "value": 72.205,
+      "age": "(72г, 2м, 14д)"
+    },
+    {
+      "cycle": "C8.75",
+      "multiplier": 8.75,
+      "value": 74.329,
+      "age": "(74г, 3м, 29д)"
+    },
+    {
+      "cycle": "C9",
+      "multiplier": 9.0,
+      "value": 76.452,
+      "age": "(76г, 5м, 13д)"
+    },
+    {
+      "cycle": "C9.25",
+      "multiplier": 9.25,
+      "value": 78.576,
+      "age": "(78г, 6м, 28д)"
+    },
+    {
+      "cycle": "C9.5",
+      "multiplier": 9.5,
+      "value": 80.7,
+      "age": "(80г, 8м, 12д)"
+    },
+    {
+      "cycle": "C9.75",
+      "multiplier": 9.75,
+      "value": 82.823,
+      "age": "(82г, 9м, 27д)"
+    },
+    {
+      "cycle": "C10",
+      "multiplier": 10.0,
+      "value": 84.947,
+      "age": "(84г, 11м, 11д)"
+    },
+    {
+      "cycle": "C10.25",
+      "multiplier": 10.25,
+      "value": 87.071,
+      "age": "(87г, 26д)"
+    },
+    {
+      "cycle": "C10.5",
+      "multiplier": 10.5,
+      "value": 89.194,
+      "age": "(89г, 2м, 10д)"
+    },
+    {
+      "cycle": "C10.75",
+      "multiplier": 10.75,
+      "value": 91.318,
+      "age": "(91г, 3м, 25д)"
+    },
+    {
+      "cycle": "C11",
+      "multiplier": 11.0,
+      "value": 93.442,
+      "age": "(93г, 5м, 9д)"
+    },
+    {
+      "cycle": "C11.25",
+      "multiplier": 11.25,
+      "value": 95.565,
+      "age": "(95г, 6м, 24д)"
+    },
+    {
+      "cycle": "C11.5",
+      "multiplier": 11.5,
+      "value": 97.689,
+      "age": "(97г, 8м, 8д)"
+    },
+    {
+      "cycle": "C11.75",
+      "multiplier": 11.75,
+      "value": 99.813,
+      "age": "(99г, 9м, 23д)"
+    },
+    {
+      "cycle": "C12",
+      "multiplier": 12.0,
+      "value": 101.936,
+      "age": "(101г, 11м, 7д)"
+    }
+  ]
+}
