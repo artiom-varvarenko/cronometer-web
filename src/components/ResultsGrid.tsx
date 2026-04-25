@@ -1,6 +1,10 @@
 import { ru } from '../i18n/ru';
-import { summaForInterval, tauForInterval } from '../state/stats';
-import type { IntervalIndex, Phase, Trial } from '../state/types';
+import {
+  groupTrialsByInterval,
+  summaForInterval,
+  tauForInterval,
+} from '../state/stats';
+import { INDICES, type Phase, type Trial } from '../state/types';
 import styles from './ResultsGrid.module.css';
 
 interface Props {
@@ -11,7 +15,6 @@ interface Props {
   onReMeasure(trialId: string): void;
 }
 
-const INDICES: readonly IntervalIndex[] = [0, 1, 2, 3];
 const ATTEMPTS: readonly number[] = [1, 2, 3, 4, 5];
 
 // Python rounds to 3 decimals (testtime.py:408, 417, 421). Match exactly so
@@ -22,15 +25,6 @@ function formatSeconds(s: number): string {
 
 function formatTau(t: number): string {
   return t.toFixed(3);
-}
-
-function groupByInterval(
-  trials: readonly Trial[],
-): Record<IntervalIndex, Trial[]> {
-  const out: Record<IntervalIndex, Trial[]> = { 0: [], 1: [], 2: [], 3: [] };
-  for (const t of trials) out[t.intervalIndex].push(t);
-  for (const idx of INDICES) out[idx].sort((a, b) => a.attempt - b.attempt);
-  return out;
 }
 
 export function ResultsGrid({
@@ -45,7 +39,7 @@ export function ResultsGrid({
   // Operator can launch a new re-measure only while no playback/timing is
   // running and no re-measure is already in flight.
   const canReMeasure = idle && !reMeasureActive;
-  const grouped = groupByInterval(trials);
+  const grouped = groupTrialsByInterval(trials);
 
   return (
     <section

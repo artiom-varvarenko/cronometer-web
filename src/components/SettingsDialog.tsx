@@ -27,17 +27,13 @@ function parseIntervals(
   return out as [number, number, number, number];
 }
 
-function formatNumber(n: number): string {
-  return Number.isInteger(n) ? n.toString() : n.toString();
-}
-
 export function SettingsDialog({ open, intervals, onSave, onCancel }: Props) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const [values, setValues] = useState<[string, string, string, string]>([
-    formatNumber(intervals[0]),
-    formatNumber(intervals[1]),
-    formatNumber(intervals[2]),
-    formatNumber(intervals[3]),
+    intervals[0].toString(),
+    intervals[1].toString(),
+    intervals[2].toString(),
+    intervals[3].toString(),
   ]);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,10 +42,10 @@ export function SettingsDialog({ open, intervals, onSave, onCancel }: Props) {
   useEffect(() => {
     if (open) {
       setValues([
-        formatNumber(intervals[0]),
-        formatNumber(intervals[1]),
-        formatNumber(intervals[2]),
-        formatNumber(intervals[3]),
+        intervals[0].toString(),
+        intervals[1].toString(),
+        intervals[2].toString(),
+        intervals[3].toString(),
       ]);
       setError(null);
     }

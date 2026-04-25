@@ -1,5 +1,7 @@
 export type IntervalIndex = 0 | 1 | 2 | 3;
 
+export const INDICES: readonly IntervalIndex[] = [0, 1, 2, 3];
+
 export interface Trial {
   id: string;
   intervalIndex: IntervalIndex;

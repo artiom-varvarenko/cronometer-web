@@ -1,5 +1,5 @@
 import { ru } from '../i18n/ru';
-import type { IntervalIndex } from '../state/types';
+import { INDICES, type IntervalIndex } from '../state/types';
 import { TRIALS_PER_INTERVAL } from '../state/useSession';
 import styles from './IntervalButtons.module.css';
 
@@ -9,8 +9,6 @@ interface Props {
   disabled: boolean;
   onPick(idx: IntervalIndex): void;
 }
-
-const INDICES: readonly IntervalIndex[] = [0, 1, 2, 3];
 
 export function IntervalButtons({
   intervals,

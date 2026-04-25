@@ -16,11 +16,9 @@ import {
   sigmaTau,
   tauForInterval,
 } from './state/stats';
-import type { IntervalIndex } from './state/types';
+import { INDICES } from './state/types';
 import { useSession } from './state/useSession';
 import styles from './App.module.css';
-
-const INDICES: readonly IntervalIndex[] = [0, 1, 2, 3];
 
 export default function App() {
   const audio = useAudio();
@@ -29,6 +27,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [visibilityAborted, setVisibilityAborted] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Reset the local name draft when the session is reset.
   useEffect(() => {
@@ -82,13 +81,14 @@ export default function App() {
       return;
     }
     setExporting(true);
+    setExportError(null);
     try {
       // Lazy import keeps ExcelJS (~50 kB gzipped) out of the initial chunk.
       const { exportWorkbook } = await import('./excel/exportWorkbook');
       await exportWorkbook(sess.session);
     } catch (err) {
       console.error('exportWorkbook failed', err);
-      window.alert(
+      setExportError(
         `${ru.errorFileSavePrefix} ${err instanceof Error ? err.message : String(err)}`,
       );
     } finally {
@@ -150,6 +150,20 @@ export default function App() {
             type="button"
             className={styles.abortDismiss}
             onClick={() => setVisibilityAborted(false)}
+            aria-label={ru.dismiss}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {exportError !== null && (
+        <div className={styles.abortBanner} role="alert">
+          <span className={styles.abortText}>{exportError}</span>
+          <button
+            type="button"
+            className={styles.abortDismiss}
+            onClick={() => setExportError(null)}
             aria-label={ru.dismiss}
           >
             ×

@@ -1,5 +1,24 @@
-import type { Trial } from './types';
+import { INDICES, type Trial } from './types';
 import { yearsToAgeString } from '../utils/ageString';
+
+export type GroupedTrials = readonly [
+  readonly Trial[],
+  readonly Trial[],
+  readonly Trial[],
+  readonly Trial[],
+];
+
+// Buckets trials by intervalIndex and sorts each bucket by attempt number.
+// Shared by the on-screen results grid and the Excel export so the two can't
+// drift out of sync.
+export function groupTrialsByInterval(
+  trials: readonly Trial[],
+): GroupedTrials {
+  const out: [Trial[], Trial[], Trial[], Trial[]] = [[], [], [], []];
+  for (const t of trials) out[t.intervalIndex].push(t);
+  for (const idx of INDICES) out[idx].sort((a, b) => a.attempt - b.attempt);
+  return out;
+}
 
 // Multiplier that converts mean τ (dimensionless) into "cycle years" in the
 // Excel cycles table. Sourced from testtime.py:499 where it appears as a
@@ -61,7 +80,7 @@ function cycleName(multiplier: number): string {
 // round DOWN in Python into values that round UP in JS. toFixed(3) evaluates
 // the original FP value against the true halfway point and matches Python
 // in the cases we care about.
-function roundTo3(x: number): number {
+export function roundTo3(x: number): number {
   return Number(x.toFixed(3));
 }
 

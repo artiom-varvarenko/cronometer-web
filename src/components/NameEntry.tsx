@@ -32,6 +32,7 @@ export function NameEntry({
       if (err instanceof EmptySurnameError) {
         setError(ru.nameEntryError);
       } else {
+        console.error('NameEntry confirm failed', err);
         setError(ru.audioUnlockError);
       }
     } finally {

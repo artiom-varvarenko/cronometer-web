@@ -191,8 +191,19 @@ export class AudioEngine {
     osc.start(time);
     osc.stop(time + MARKER_DURATION_S);
 
-    return new Promise<number>((resolve) => {
-      osc.onended = () => resolve(performance.now());
+    // Failsafe: if onended never fires (context closed, oscillator GC'd
+    // before dispatching), reject so playInterval's Promise.all cannot hang
+    // indefinitely. Scheduled marker time plus 2 s of main-thread slack.
+    const timeoutMs = Math.max(2000, (time - ctx.currentTime) * 1000 + 2000);
+    return new Promise<number>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('marker onended timeout')),
+        timeoutMs,
+      );
+      osc.onended = () => {
+        clearTimeout(timer);
+        resolve(performance.now());
+      };
     });
   }
 }

@@ -10,15 +10,15 @@ import ExcelJS, { type Borders } from 'exceljs';
 import { ru } from '../i18n/ru';
 import {
   cyclesTable,
+  groupTrialsByInterval,
   meanTau as computeMeanTau,
+  roundTo3,
   sigmaTau,
   summaForInterval,
   tauForInterval,
 } from '../state/stats';
-import type { IntervalIndex, Session, Trial } from '../state/types';
+import { INDICES, type Session } from '../state/types';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
-
-const INDICES: readonly IntervalIndex[] = [0, 1, 2, 3];
 
 const THIN_BORDER: Partial<Borders> = {
   top: { style: 'thin' },
@@ -26,27 +26,6 @@ const THIN_BORDER: Partial<Borders> = {
   bottom: { style: 'thin' },
   right: { style: 'thin' },
 };
-
-// testtime.py uses round(x, 3) throughout. toFixed(3) + Number matches that
-// for the session values we care about — see stats.ts for the discussion
-// of why Math.round(x*1000)/1000 would diverge near FP halfway points.
-function round3(n: number): number {
-  return Number(n.toFixed(3));
-}
-
-type GroupedTrials = readonly [
-  readonly Trial[],
-  readonly Trial[],
-  readonly Trial[],
-  readonly Trial[],
-];
-
-function groupTrialsByInterval(trials: readonly Trial[]): GroupedTrials {
-  const out: [Trial[], Trial[], Trial[], Trial[]] = [[], [], [], []];
-  for (const t of trials) out[t.intervalIndex].push(t);
-  for (const idx of INDICES) out[idx].sort((a, b) => a.attempt - b.attempt);
-  return out;
-}
 
 export function buildWorkbook(session: Session): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
@@ -94,14 +73,14 @@ export function buildWorkbook(session: Session): ExcelJS.Workbook {
     for (let j = 0; j < 5; j++) {
       const trial = rowTrials[j];
       ws.getCell(row, j + 2).value =
-        trial !== undefined ? round3(trial.userSeconds) : ru.excelEmptyCell;
+        trial !== undefined ? roundTo3(trial.userSeconds) : ru.excelEmptyCell;
     }
 
     // Σ and τ — left unset when the row has no trials.
     const sum = perIntervalSum[idx];
     const tau = perIntervalTau[idx];
-    if (sum !== null) ws.getCell(row, 7).value = round3(sum);
-    if (tau !== null) ws.getCell(row, 8).value = round3(tau);
+    if (sum !== null) ws.getCell(row, 7).value = roundTo3(sum);
+    if (tau !== null) ws.getCell(row, 8).value = roundTo3(tau);
   });
 
   // Remaining sections only render when at least one trial exists — matches
@@ -124,10 +103,10 @@ export function buildWorkbook(session: Session): ExcelJS.Workbook {
     for (let col = 2; col <= 6; col++) {
       ws.getCell(6, col).value = ru.excelEmptyCell;
     }
-    ws.getCell(6, 7).value = round3(totalSum);
+    ws.getCell(6, 7).value = roundTo3(totalSum);
     if (meanTauValue !== null) {
       const meanCell = ws.getCell(6, 8);
-      meanCell.value = round3(meanTauValue);
+      meanCell.value = roundTo3(meanTauValue);
       meanCell.font = { bold: true };
     }
 
@@ -137,7 +116,7 @@ export function buildWorkbook(session: Session): ExcelJS.Workbook {
       ws.getCell(7, col).value = ru.excelEmptyCell;
     }
     if (sigmaValue !== null) {
-      ws.getCell(7, 8).value = round3(sigmaValue);
+      ws.getCell(7, 8).value = roundTo3(sigmaValue);
     }
 
     // ---- Row 10: "Циклы (возраст)" merged header (D10:E10) ------------
@@ -178,9 +157,18 @@ export function buildWorkbook(session: Session): ExcelJS.Workbook {
   }
 
   // ---- Column widths (testtime.py:506-512) -----------------------------
-  ws.getColumn('A').width = 15;
-  for (const col of ['B', 'C', 'D', 'E', 'F', 'G', 'H']) {
-    ws.getColumn(col).width = col === 'E' ? 15 : 10;
+  const columnWidths: Record<string, number> = {
+    A: 15,
+    B: 10,
+    C: 10,
+    D: 10,
+    E: 15,
+    F: 10,
+    G: 10,
+    H: 10,
+  };
+  for (const [col, width] of Object.entries(columnWidths)) {
+    ws.getColumn(col).width = width;
   }
 
   return wb;
