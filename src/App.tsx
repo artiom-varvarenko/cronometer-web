@@ -111,7 +111,7 @@ export default function App() {
     return { meanTauValue: m, sigmaValue: s };
   }, [sess.session.trials]);
 
-  const showResults = phase !== 'setup' && sess.session.trials.length > 0;
+  const showResults = phase === 'complete';
 
   return (
     <main className={styles.shell}>
@@ -174,7 +174,6 @@ export default function App() {
       <section className={styles.controls}>
         <div className={styles.section}>
           <IntervalButtons
-            intervals={sess.session.intervals}
             intervalCounts={sess.intervalCounts}
             disabled={phase !== 'confirmed' || reMeasureActive}
             onPick={(idx) => {

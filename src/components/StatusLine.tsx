@@ -63,7 +63,7 @@ function computeText(
       return ru.statusAllComplete;
     case 'confirmed': {
       if (briefStatus !== null && briefStatus.kind === 'recorded') {
-        return `${ru.statusResultRecordedPrefix} ${briefStatus.trialNumber}${ru.statusResultRecordedSuffix}`;
+        return ru.statusResultRecorded;
       }
       const total = intervalCounts.reduce((a, b) => a + b, 0);
       if (total === 0) return ru.statusChooseInterval;

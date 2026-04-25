@@ -40,7 +40,7 @@ export const ru = {
   stopButton: 'Стоп',
 
   // ---- Bottom-bar actions (testtime.py:96, 103) ----------------------------
-  showResultsButton: 'Отобразить таблицу результатов',
+  showResultsButton: 'Экспортировать результаты',
   showIntervalsButton: 'Отобразить интервалы',
 
   // ---- Settings dialog (testtime.py:109-146) -------------------------------
@@ -66,9 +66,9 @@ export const ru = {
   statusPlayingIntervalSuffix: 'интервала...',
   statusReproduceInterval: 'Теперь попробуйте воспроизвести этот интервал',
   statusTimerStarted: 'Отсчет времени запущен',
-  // testtime.py:266 — f"Результат записан. (Тест {n}/20)"
-  statusResultRecordedPrefix: 'Результат записан. (Тест',
-  statusResultRecordedSuffix: '/20)',
+  // testtime.py:266 — originally "Результат записан. (Тест {n}/20)"; the
+  // trial counter is hidden so the test subject can't track progress.
+  statusResultRecorded: 'Результат записан.',
   // testtime.py:299 — f"Выберите следующий интервал. Доступны: {list}"
   statusChooseNextPrefix: 'Выберите следующий интервал. Доступны:',
   statusAllComplete: 'Тест завершен! Все 20 интервалов пройдены.',
@@ -81,7 +81,7 @@ export const ru = {
   // testtime.py:199 — f"{nominative} интервал уже использован 5 раз"
   warningIntervalExhaustedSuffix: 'интервал уже использован 5 раз',
   completionMessage:
-    'Вы прошли все 20 интервалов!\nНажмите «Отобразить таблицу результатов» для просмотра.',
+    'Вы прошли все 20 интервалов!\nНажмите «Экспортировать результаты» для просмотра.',
   infoNoResultsYet: 'Пока нет результатов для отображения',
   // testtime.py:520 — f"Не удалось сохранить файл: {e}"
   errorFileSavePrefix: 'Не удалось сохранить файл:',

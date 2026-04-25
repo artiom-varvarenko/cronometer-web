@@ -4,14 +4,12 @@ import { TRIALS_PER_INTERVAL } from '../state/useSession';
 import styles from './IntervalButtons.module.css';
 
 interface Props {
-  intervals: readonly [number, number, number, number];
   intervalCounts: readonly [number, number, number, number];
   disabled: boolean;
   onPick(idx: IntervalIndex): void;
 }
 
 export function IntervalButtons({
-  intervals,
   intervalCounts,
   disabled,
   onPick,
@@ -32,15 +30,6 @@ export function IntervalButtons({
               onClick={() => onPick(i)}
             >
               {ru.intervalButtons[i]}
-              {' — '}
-              {intervals[i]}
-              {' '}
-              {ru.settingsUnitSeconds}
-              {' ('}
-              {intervalCounts[i]}
-              {'/'}
-              {TRIALS_PER_INTERVAL}
-              {')'}
             </button>
           </li>
         );
