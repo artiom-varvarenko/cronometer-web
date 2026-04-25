@@ -68,6 +68,32 @@ export default function App() {
     }
   }, [phase]);
 
+  // Spacebar shortcut for the operator: same Start/Stop semantics as the
+  // on-screen button. Skipped when focus is in an editable element so the
+  // surname field still accepts spaces. preventDefault() avoids a double
+  // trigger if the StartStopButton itself happens to be focused.
+  const { startTimer, stopTimer } = sess;
+  useEffect(() => {
+    if (phase !== 'armed' && phase !== 'timing') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (target.isContentEditable) return;
+      }
+      e.preventDefault();
+      if (phase === 'armed') void startTimer(e.timeStamp);
+      else void stopTimer(e.timeStamp);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [phase, startTimer, stopTimer]);
+
   const reMeasureActive = sess.session.pendingReMeasureOf !== null;
   const trialCount = sess.session.trials.length;
   const canExport = trialCount > 0 && !intervalsLocked && !exporting;
